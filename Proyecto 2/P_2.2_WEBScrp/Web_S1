@@ -1,0 +1,45 @@
+import requests
+from bs4 import BeautifulSoup
+
+# URL de la propiedad
+url = "https://mapainmueble.com/properties/apartamento-en-alquiler-santa-ines-zona-14-amueblado-de-3-dormitorios-daa41616/"
+
+# Simular un navegador para evitar bloqueos
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+}
+
+# Hacer la solicitud HTTP
+response = requests.get(url, headers=headers)
+
+# Verificar si la página respondió correctamente
+if response.status_code == 200:
+    print("[✅] Conexión exitosa: Código 200")
+
+    # Crear objeto BeautifulSoup con el HTML de la página
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Buscar el contenedor donde están los detalles de la propiedad
+    detalles_contenedor = soup.find("div", id="collapseOne")  # ID del panel correcto
+
+    # Diccionario para almacenar los datos extraídos
+    datos_extraidos = {}
+
+    if detalles_contenedor:
+        # Buscar todas las secciones con detalles de la propiedad
+        detalles = detalles_contenedor.find_all("div", class_="listing_detail col-md-4")
+
+        for detalle in detalles:
+            label = detalle.find("strong")  # Etiqueta con el nombre del dato (ej: "Precio:")
+            value = detalle.get_text(strip=True).replace(label.get_text(strip=True), "").strip() if label else "No encontrado"
+
+            if label:
+                datos_extraidos[label.text.strip()] = value
+
+    # Mostrar los resultados extraídos
+    print("\n🔹 Datos de la propiedad:")
+    for key, value in datos_extraidos.items():
+        print(f"- {key}: {value}")
+
+else:
+    print(f"[❌] Error al acceder a la página. Código: {response.status_code}")
