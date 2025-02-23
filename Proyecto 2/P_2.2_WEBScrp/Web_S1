@@ -30,13 +30,10 @@ if response.status_code == 200:
             if label:
                 value = label.next_sibling  # Obtener el valor exacto
 
-                # 💡 IMPRIMIR PARA DEPURAR
-                print(f"🔍 Encontrado: {label.text.strip()} -> {value}")
-
-                if value:
+                if value and isinstance(value, str):  # Verificar que sea texto
                     datos_extraidos[label.text.strip()] = value.strip()
                 else:
-                    datos_extraidos[label.text.strip()] = "No encontrado"
+                    datos_extraidos[label.text.strip()] = "No disponible"
 
     # 📍 EXTRAER UBICACIÓN
     ubicacion_contenedor = soup.find("div", class_="panel-body")
@@ -47,24 +44,47 @@ if response.status_code == 200:
         for ubicacion in ubicaciones:
             label = ubicacion.find("strong")
             if label:
-                value = ubicacion.find("a").text.strip() if ubicacion.find("a") else label.next_sibling
+                value = (
+                    ubicacion.find("a").text.strip()
+                    if ubicacion.find("a")
+                    else label.next_sibling if label.next_sibling else "No disponible"
+                )
 
-                # 💡 IMPRIMIR PARA DEPURAR
-                print(f"📍 Ubicación: {label.text.strip()} -> {value}")
-
-                if value:
+                if value and isinstance(value, str):  # Verificar que sea texto
                     ubicacion_datos[label.text.strip()] = value.strip()
                 else:
-                    ubicacion_datos[label.text.strip()] = "No encontrado"
+                    ubicacion_datos[label.text.strip()] = "No disponible"
 
-    # 📌 MOSTRAR LOS DATOS EXTRAÍDOS
-    print("\n🔹 **Datos de la Propiedad (Extraídos y Depurados):**")
+    # 📌 EXTRAER LINK DE GOOGLE MAPS
+    google_maps_link = soup.find("a", class_="acc_google_maps")["href"] if soup.find("a", class_="acc_google_maps") else "No disponible"
+
+    # 🏠 EXTRAER TIPO DE PROPIEDAD Y ESTADO DESDE EL HTML
+    tipo_propiedad = "No disponible"
+    estado_propiedad = "No disponible"
+
+    tipo_estado_container = soup.find("div", class_="cat_n_type")
+
+    if tipo_estado_container:
+        labels = tipo_estado_container.find_all("div", class_="property_title_label")
+        
+        if len(labels) >= 2:
+            estado_propiedad = labels[0].text.strip()  # Alquiler o Venta
+            tipo_propiedad = labels[1].text.strip()  # Apartamento o Casa
+        elif len(labels) == 1:
+            estado_propiedad = labels[0].text.strip()  # En caso de que solo haya uno
+
+    # 📌 MOSTRAR TODOS LOS DATOS EXTRAÍDOS
+    print("\n🔹 **Datos de la Propiedad:**")
+    print(f"- Estado: {estado_propiedad}")
+    print(f"- Tipo de Propiedad: {tipo_propiedad}")
     for key, value in datos_extraidos.items():
-        print(f"- {key}: {value}")
+        print(f"- {key} {value}")
 
-    print("\n📍 **Ubicación (Extraída y Depurada):**")
+    print("\n📍 **Ubicación:**")
     for key, value in ubicacion_datos.items():
-        print(f"- {key}: {value}")
+        print(f"- {key} {value}")
+
+    print(f"\n🌍 **Google Maps:** {google_maps_link}")
 
 else:
     print(f"[❌] Error al acceder a la página. Código: {response.status_code}")
