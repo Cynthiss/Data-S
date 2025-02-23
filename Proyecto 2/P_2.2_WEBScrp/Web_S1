@@ -19,26 +19,51 @@ if response.status_code == 200:
     # Crear objeto BeautifulSoup con el HTML de la página
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Buscar el contenedor donde están los detalles de la propiedad
-    detalles_contenedor = soup.find("div", id="collapseOne")  # ID del panel correcto
-
-    # Diccionario para almacenar los datos extraídos
+    # 🏡 EXTRAER DATOS DE LA PROPIEDAD
+    detalles_contenedor = soup.find("div", id="collapseOne")
     datos_extraidos = {}
 
     if detalles_contenedor:
-        # Buscar todas las secciones con detalles de la propiedad
         detalles = detalles_contenedor.find_all("div", class_="listing_detail col-md-4")
-
         for detalle in detalles:
-            label = detalle.find("strong")  # Etiqueta con el nombre del dato (ej: "Precio:")
-            value = detalle.get_text(strip=True).replace(label.get_text(strip=True), "").strip() if label else "No encontrado"
-
+            label = detalle.find("strong")  # Buscar etiqueta con título (ej: "Precio:")
             if label:
-                datos_extraidos[label.text.strip()] = value
+                value = label.next_sibling  # Obtener el valor exacto
 
-    # Mostrar los resultados extraídos
-    print("\n🔹 Datos de la propiedad:")
+                # 💡 IMPRIMIR PARA DEPURAR
+                print(f"🔍 Encontrado: {label.text.strip()} -> {value}")
+
+                if value:
+                    datos_extraidos[label.text.strip()] = value.strip()
+                else:
+                    datos_extraidos[label.text.strip()] = "No encontrado"
+
+    # 📍 EXTRAER UBICACIÓN
+    ubicacion_contenedor = soup.find("div", class_="panel-body")
+    ubicacion_datos = {}
+
+    if ubicacion_contenedor:
+        ubicaciones = ubicacion_contenedor.find_all("div", class_="listing_detail col-md-4")
+        for ubicacion in ubicaciones:
+            label = ubicacion.find("strong")
+            if label:
+                value = ubicacion.find("a").text.strip() if ubicacion.find("a") else label.next_sibling
+
+                # 💡 IMPRIMIR PARA DEPURAR
+                print(f"📍 Ubicación: {label.text.strip()} -> {value}")
+
+                if value:
+                    ubicacion_datos[label.text.strip()] = value.strip()
+                else:
+                    ubicacion_datos[label.text.strip()] = "No encontrado"
+
+    # 📌 MOSTRAR LOS DATOS EXTRAÍDOS
+    print("\n🔹 **Datos de la Propiedad (Extraídos y Depurados):**")
     for key, value in datos_extraidos.items():
+        print(f"- {key}: {value}")
+
+    print("\n📍 **Ubicación (Extraída y Depurada):**")
+    for key, value in ubicacion_datos.items():
         print(f"- {key}: {value}")
 
 else:
