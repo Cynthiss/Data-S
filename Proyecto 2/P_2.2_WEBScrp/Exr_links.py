@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import csv
 
 # URL base del listado de propiedades
 url_base = "https://mapainmueble.com/apartamentos-en-alquiler-zona-14/"
@@ -44,7 +45,8 @@ def obtener_links_propiedades():
 
         # Buscar la paginación
         paginacion = soup.find("ul", class_="pagination")
-        if not paginacion or not soup.find("a", text=str(pagina_actual + 1)):
+        if not paginacion or not soup.find("a", string=str(pagina_actual + 1)):
+
             print(f"[✅] No hay más páginas después de la {pagina_actual}. Finalizando extracción.")
             break
 
@@ -52,6 +54,16 @@ def obtener_links_propiedades():
         pagina_actual += 1
 
     print(f"\n[✅] Total de propiedades encontradas: {len(propiedad_links)}")
+
+    # 📌 GUARDAR LINKS EN CSV
+    with open("propiedades_links.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["URL"])  # Encabezado
+        for link in propiedad_links:
+            writer.writerow([link])
+
+    print("\n[✅] Links guardados en propiedades_links.csv")
+
     return propiedad_links
 
 # 📌 Ejecutar el scraper y obtener los links de todas las propiedades

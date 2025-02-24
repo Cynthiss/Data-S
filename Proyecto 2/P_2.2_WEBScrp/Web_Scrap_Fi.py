@@ -12,7 +12,6 @@ headers = {
 def extraer_datos_propiedad(url):
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        print(f"[❌] Error al acceder a la propiedad: {url}")
         return None  # No guardamos propiedades que no respondan correctamente
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -68,13 +67,17 @@ def extraer_datos_propiedad(url):
         elif len(labels) == 1:
             estado_propiedad = labels[0].text.strip()  # En caso de que solo haya uno
 
-    # 📌 ORGANIZAR LOS DATOS EXTRAÍDOS
+    # 📌 ORGANIZAR LOS DATOS EXTRAÍDOS Y FORMATEAR EL TAMAÑO EN m²
+    tamaño_propiedad = datos_extraidos.get("Tamaño de la propiedad:", "No disponible")
+    if tamaño_propiedad != "No disponible" and "m" in tamaño_propiedad:
+        tamaño_propiedad = tamaño_propiedad.replace("m", "m²")
+
     datos_propiedad = {
         "URL": url,
         "Estado": estado_propiedad,
         "Tipo de Propiedad": tipo_propiedad,
         "Precio": datos_extraidos.get("Precio:", "No disponible"),
-        "Tamaño de la propiedad": datos_extraidos.get("Tamaño de la propiedad:", "No disponible"),
+        "Tamaño de la propiedad": tamaño_propiedad,
         "Parqueos": datos_extraidos.get("Parqueos:", "No disponible"),
         "Dormitorios": datos_extraidos.get("Dormitorios:", "No disponible"),
         "Baños": datos_extraidos.get("Baños:", "No disponible"),
@@ -84,11 +87,6 @@ def extraer_datos_propiedad(url):
         "Sub-Sector/Proyecto": ubicacion_datos.get("Sub-Sector/Proyecto:", "No disponible"),
         "Google Maps": google_maps_link,
     }
-
-    # 📌 IMPRIMIR LOS DATOS EXTRAÍDOS PARA VERIFICACIÓN
-    print(f"\n🔹 **Datos extraídos de {url}:**")
-    for key, value in datos_propiedad.items():
-        print(f"- {key}: {value}")
 
     return datos_propiedad
 
@@ -103,7 +101,6 @@ def procesar_propiedades():
         next(reader)  # Saltar encabezado
         for i, row in enumerate(reader, 1):
             url = row[0]
-            print(f"[🔍] Extrayendo datos de propiedad {i}: {url}")
 
             # Intentar extraer datos con reintentos si hay fallos de conexión
             for intento in range(3):
@@ -112,7 +109,6 @@ def procesar_propiedades():
                     datos_completos.append(datos)
                     break  # Si extrae bien, no reintentar
                 else:
-                    print(f"[⚠️] Reintentando ({intento + 1}/3)...")
                     time.sleep(5)  # Esperar 5 segundos antes de reintentar
 
             if not datos:
@@ -125,8 +121,6 @@ def procesar_propiedades():
             writer.writeheader()
             writer.writerows(datos_completos)
 
-        print(f"\n[✅] Datos guardados en propiedades_completas.csv con {len(datos_completos)} propiedades.")
-
     # 📌 GUARDAR ERRORES EN CSV
     if errores:
         with open("propiedades_errores.csv", "w", newline="", encoding="utf-8") as f:
@@ -134,8 +128,10 @@ def procesar_propiedades():
             writer.writerow(["URL"])  # Encabezado
             writer.writerows(errores)
 
-        print(f"\n[⚠️] {len(errores)} propiedades no pudieron extraerse. Guardadas en propiedades_errores.csv")
+    # 📌 MOSTRAR SOLO RESULTADO FINAL
+    print(f"\n[✅] Se procesaron {len(datos_completos)} propiedades correctamente.")
+    if errores:
+        print(f"[⚠️] {len(errores)} propiedades tuvieron errores y se guardaron en 'propiedades_errores.csv'.")
 
 # 📌 Ejecutar extracción de datos
 procesar_propiedades()
-
